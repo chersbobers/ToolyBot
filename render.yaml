@@ -1,0 +1,12 @@
+services:
+  - type: worker
+    name: tooly-bot
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+    autoDeploy: true
