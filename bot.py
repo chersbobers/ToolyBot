@@ -123,7 +123,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 # Commands
-@bot.command(name='help')
+@bot.command(name='bothelp')
 async def help_command(ctx):
     embed = discord.Embed(
         title='🤖 Bot Commands',
