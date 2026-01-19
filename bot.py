@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 import os
 import json
@@ -14,7 +15,6 @@ logger = logging.getLogger('bot')
 
 # Configuration
 CONFIG = {
-    'prefix': '!',
     'xp_min': 15,
     'xp_max': 25,
     'xp_cooldown': 60,
@@ -70,20 +70,29 @@ class SimpleDB:
         users.sort(key=lambda x: (x['data']['level'], x['data']['xp']), reverse=True)
         return users
 
-# Initialize
-intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
+# Bot setup
+class MyBot(commands.Bot):
+    def __init__(self):
+        intents = discord.Intents.default()
+        intents.message_content = True
+        intents.members = True
+        
+        super().__init__(command_prefix='/', intents=intents)
+        self.db = SimpleDB(CONFIG['data_file'])
+    
+    async def setup_hook(self):
+        # Sync slash commands
+        await self.tree.sync()
+        logger.info('✅ Slash commands synced!')
 
-bot = commands.Bot(command_prefix=CONFIG['prefix'], intents=intents)
-db = SimpleDB(CONFIG['data_file'])
+bot = MyBot()
 
 # Events
 @bot.event
 async def on_ready():
     logger.info(f'✅ Logged in as {bot.user}')
     logger.info(f'📊 Connected to {len(bot.guilds)} guilds')
-    await bot.change_presence(activity=discord.Game(name=f"{CONFIG['prefix']}help"))
+    await bot.change_presence(activity=discord.Game(name="/help"))
     logger.info('🚀 All systems operational!')
 
 @bot.event
@@ -92,7 +101,7 @@ async def on_message(message):
         return
     
     # XP System
-    user_data = db.get_user(str(message.guild.id), str(message.author.id))
+    user_data = bot.db.get_user(str(message.guild.id), str(message.author.id))
     now = datetime.now().timestamp()
     
     if now - user_data['last_message'] >= CONFIG['xp_cooldown']:
@@ -118,52 +127,60 @@ async def on_message(message):
                 f'{random.choice(messages)} You earned **{coin_reward:,} coins**! 💰'
             )
         
-        db.set_user(str(message.guild.id), str(message.author.id), user_data)
+        bot.db.set_user(str(message.guild.id), str(message.author.id), user_data)
     
     await bot.process_commands(message)
 
-# Commands
-@bot.command(name='bothelp')
-async def help_command(ctx):
+# Slash Commands
+@bot.tree.command(name='help', description='Show all available commands')
+async def help_command(interaction: discord.Interaction):
     embed = discord.Embed(
         title='🤖 Bot Commands',
+        description='Here are all the slash commands you can use!',
         color=0x5865F2
     )
     embed.add_field(
         name='📊 Leveling',
-        value='`!rank [@user]` - View rank\n`!leaderboard` - Top 10 users',
+        value='`/rank` - View your rank\n`/leaderboard` - Top 10 users',
         inline=False
     )
     embed.add_field(
         name='💰 Economy',
-        value='`!balance [@user]` - Check balance\n`!daily` - Daily reward\n`!work` - Work for coins',
+        value='`/balance` - Check balance\n`/daily` - Daily reward\n`/work` - Work for coins',
         inline=False
     )
     embed.add_field(
         name='🎮 Fun',
-        value='`!8ball <question>` - Magic 8ball\n`!roll [sides]` - Roll dice\n`!flip` - Flip coin\n`!cat` - Random cat\n`!dog` - Random dog',
+        value='`/8ball` - Magic 8ball\n`/roll` - Roll dice\n`/flip` - Flip coin\n`/cat` - Random cat\n`/dog` - Random dog',
         inline=False
     )
-    await ctx.send(embed=embed)
+    embed.add_field(
+        name='ℹ️ Info',
+        value='`/ping` - Check bot latency\n`/serverinfo` - Server information',
+        inline=False
+    )
+    await interaction.response.send_message(embed=embed)
 
-@bot.command(name='ping')
-async def ping(ctx):
+@bot.tree.command(name='ping', description='Check bot latency')
+async def ping(interaction: discord.Interaction):
     latency = round(bot.latency * 1000)
-    await ctx.send(f'🏓 Pong! Latency: `{latency}ms`')
+    await interaction.response.send_message(f'🏓 Pong! Latency: `{latency}ms`')
 
-@bot.command(name='rank')
-async def rank(ctx, member: discord.Member = None):
-    target = member or ctx.author
-    user_data = db.get_user(str(ctx.guild.id), str(target.id))
+@bot.tree.command(name='rank', description='View your rank and level')
+async def rank(interaction: discord.Interaction, member: discord.Member = None):
+    target = member or interaction.user
+    user_data = bot.db.get_user(str(interaction.guild.id), str(target.id))
     xp_needed = user_data['level'] * CONFIG['xp_per_level']
     
-    all_users = db.get_all_guild_users(str(ctx.guild.id))
+    all_users = bot.db.get_all_guild_users(str(interaction.guild.id))
     rank = next((i + 1 for i, u in enumerate(all_users) if u['user_id'] == str(target.id)), 'Unranked')
     
     progress = int((user_data['xp'] / xp_needed) * 20) if xp_needed > 0 else 0
     bar = '█' * progress + '░' * (20 - progress)
     
-    embed = discord.Embed(color=0x4D96FF)
+    color = 0xFF6B6B if user_data['level'] >= 50 else 0xFFD93D if user_data['level'] >= 30 else 0x6BCB77 if user_data['level'] >= 15 else 0x4D96FF
+    
+    embed = discord.Embed(color=color)
     embed.set_author(name=f"{target.display_name}'s Profile", icon_url=target.display_avatar.url)
     embed.description = f"""
 **RANK** • #{rank} / {len(all_users)}
@@ -174,11 +191,12 @@ async def rank(ctx, member: discord.Member = None):
 
 **💰 BALANCE** • {user_data['coins']:,} coins
     """
-    await ctx.send(embed=embed)
+    embed.set_thumbnail(url=target.display_avatar.url)
+    await interaction.response.send_message(embed=embed)
 
-@bot.command(name='leaderboard', aliases=['lb'])
-async def leaderboard(ctx):
-    all_users = db.get_all_guild_users(str(ctx.guild.id))[:10]
+@bot.tree.command(name='leaderboard', description='View the server leaderboard')
+async def leaderboard(interaction: discord.Interaction):
+    all_users = bot.db.get_all_guild_users(str(interaction.guild.id))[:10]
     
     description = []
     for i, u in enumerate(all_users):
@@ -191,108 +209,141 @@ async def leaderboard(ctx):
     embed = discord.Embed(
         title='🏆 Server Leaderboard',
         description='\n'.join(description) if description else 'No users yet!',
-        color=0x9B59B6
+        color=0x9B59B6,
+        timestamp=datetime.utcnow()
     )
-    await ctx.send(embed=embed)
+    embed.set_footer(text='Top 10 users by level and XP')
+    await interaction.response.send_message(embed=embed)
 
-@bot.command(name='balance', aliases=['bal'])
-async def balance(ctx, member: discord.Member = None):
-    target = member or ctx.author
-    user_data = db.get_user(str(ctx.guild.id), str(target.id))
+@bot.tree.command(name='balance', description='Check your coin balance')
+async def balance(interaction: discord.Interaction, member: discord.Member = None):
+    target = member or interaction.user
+    user_data = bot.db.get_user(str(interaction.guild.id), str(target.id))
     
     embed = discord.Embed(
         title='💰 Balance',
-        description=f'{target.mention} has **{user_data["coins"]:,}** coins!',
+        description=f'{target.mention} has **{user_data["coins"]:,}** coins in wallet and **{user_data["bank"]:,}** in bank!\n**Total:** {user_data["coins"] + user_data["bank"]:,} coins',
         color=0xFFD700
     )
-    await ctx.send(embed=embed)
+    await interaction.response.send_message(embed=embed)
 
-@bot.command(name='daily')
-async def daily(ctx):
-    user_data = db.get_user(str(ctx.guild.id), str(ctx.author.id))
+@bot.tree.command(name='daily', description='Claim your daily reward')
+async def daily(interaction: discord.Interaction):
+    user_data = bot.db.get_user(str(interaction.guild.id), str(interaction.user.id))
     now = datetime.now().timestamp()
     
     if now - user_data['last_daily'] < 86400:
         time_left = 86400 - (now - user_data['last_daily'])
         hours = int(time_left / 3600)
-        await ctx.send(f'⏳ You already claimed your daily! Come back in {hours} hours.')
+        await interaction.response.send_message(f'⏳ You already claimed your daily! Come back in {hours} hours.', ephemeral=True)
         return
     
     reward = 100
     user_data['coins'] += reward
     user_data['last_daily'] = now
-    db.set_user(str(ctx.guild.id), str(ctx.author.id), user_data)
+    bot.db.set_user(str(interaction.guild.id), str(interaction.user.id), user_data)
     
-    await ctx.send(f'✅ You claimed your daily reward of **{reward:,}** coins!\n💰 New balance: **{user_data["coins"]:,}** coins')
+    await interaction.response.send_message(f'✅ You claimed your daily reward of **{reward:,}** coins!\n💰 New balance: **{user_data["coins"]:,}** coins')
 
-@bot.command(name='work')
-async def work(ctx):
-    user_data = db.get_user(str(ctx.guild.id), str(ctx.author.id))
+@bot.tree.command(name='work', description='Work to earn coins')
+async def work(interaction: discord.Interaction):
+    user_data = bot.db.get_user(str(interaction.guild.id), str(interaction.user.id))
     now = datetime.now().timestamp()
     
     if now - user_data['last_work'] < 3600:
         time_left = 3600 - (now - user_data['last_work'])
         minutes = int(time_left / 60)
-        await ctx.send(f'⏳ You need to rest! Come back in {minutes} minutes.')
+        await interaction.response.send_message(f'⏳ You need to rest! Come back in {minutes} minutes.', ephemeral=True)
         return
     
     earnings = random.randint(10, 50)
     user_data['coins'] += earnings
     user_data['last_work'] = now
-    db.set_user(str(ctx.guild.id), str(ctx.author.id), user_data)
+    bot.db.set_user(str(interaction.guild.id), str(interaction.user.id), user_data)
     
     jobs = [
         'You worked as a programmer and earned',
         'You delivered pizza and earned',
-        'You streamed on Twitch and earned'
+        'You streamed on Twitch and earned',
+        'You mowed lawns and earned',
+        'You washed cars and earned',
+        'You tutored students and earned'
     ]
     
-    await ctx.send(f'💼 {random.choice(jobs)} **{earnings:,}** coins!\n💰 New balance: **{user_data["coins"]:,}** coins')
+    await interaction.response.send_message(f'💼 {random.choice(jobs)} **{earnings:,}** coins!\n💰 New balance: **{user_data["coins"]:,}** coins')
 
-@bot.command(name='8ball')
-async def eightball(ctx, *, question):
+@bot.tree.command(name='8ball', description='Ask the magic 8ball a question')
+async def eightball(interaction: discord.Interaction, question: str):
     responses = [
-        'Yes, definitely!', 'No way!', 'Maybe...', 'Ask again later',
-        'Absolutely!', 'I doubt it', 'Signs point to yes', 'Very doubtful'
+        'Yes, definitely!', 'It is certain.', 'Without a doubt.', 'You may rely on it.',
+        'As I see it, yes.', 'Most likely.', 'Outlook good.', 'Signs point to yes.',
+        'Reply hazy, try again.', 'Ask again later.', 'Better not tell you now.',
+        'Cannot predict now.', "Don't count on it.", 'My reply is no.', 'Very doubtful.'
     ]
-    await ctx.send(f'🔮 {random.choice(responses)}')
+    await interaction.response.send_message(f'🔮 **{question}**\n{random.choice(responses)}')
 
-@bot.command(name='roll')
-async def roll(ctx, sides: int = 6):
+@bot.tree.command(name='roll', description='Roll a dice')
+async def roll(interaction: discord.Interaction, sides: int = 6):
     if sides < 2 or sides > 100:
-        await ctx.send('❌ Dice must have between 2 and 100 sides!')
+        await interaction.response.send_message('❌ Dice must have between 2 and 100 sides!', ephemeral=True)
         return
     result = random.randint(1, sides)
-    await ctx.send(f'🎲 You rolled a **{result}** (1-{sides})')
+    await interaction.response.send_message(f'🎲 You rolled a **{result}** (1-{sides})')
 
-@bot.command(name='flip')
-async def flip(ctx):
+@bot.tree.command(name='flip', description='Flip a coin')
+async def flip(interaction: discord.Interaction):
     result = random.choice(['Heads', 'Tails'])
-    await ctx.send(f'🪙 The coin landed on **{result}**!')
+    await interaction.response.send_message(f'🪙 The coin landed on **{result}**!')
 
-@bot.command(name='cat')
-async def cat(ctx):
+@bot.tree.command(name='cat', description='Get a random cat picture')
+async def cat(interaction: discord.Interaction):
+    await interaction.response.defer()
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get('https://api.thecatapi.com/v1/images/search') as resp:
                 data = await resp.json()
                 embed = discord.Embed(title='🐱 Random Kitty!', color=0xFF69B4)
                 embed.set_image(url=data[0]['url'])
-                await ctx.send(embed=embed)
+                embed.set_footer(text=f'Requested by {interaction.user.name}')
+                await interaction.followup.send(embed=embed)
         except:
-            await ctx.send('Failed to fetch cat 😿')
+            await interaction.followup.send('Failed to fetch a cat picture 😿')
 
-@bot.command(name='dog')
-async def dog(ctx):
+@bot.tree.command(name='dog', description='Get a random dog picture')
+async def dog(interaction: discord.Interaction):
+    await interaction.response.defer()
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get('https://api.thedogapi.com/v1/images/search') as resp:
                 data = await resp.json()
                 embed = discord.Embed(title='🐶 Random Doggy!', color=0xFF69B4)
                 embed.set_image(url=data[0]['url'])
-                await ctx.send(embed=embed)
+                embed.set_footer(text=f'Requested by {interaction.user.name}')
+                await interaction.followup.send(embed=embed)
         except:
-            await ctx.send('Failed to fetch dog 😥')
+            await interaction.followup.send('Failed to fetch a dog picture 😥')
+
+@bot.tree.command(name='serverinfo', description='Display server information')
+async def serverinfo(interaction: discord.Interaction):
+    guild = interaction.guild
+    
+    embed = discord.Embed(
+        title=f'📊 {guild.name}',
+        color=0x5865F2,
+        timestamp=datetime.utcnow()
+    )
+    
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
+    
+    embed.add_field(name='👑 Owner', value=guild.owner.mention, inline=True)
+    embed.add_field(name='👥 Members', value=guild.member_count, inline=True)
+    embed.add_field(name='📅 Created', value=guild.created_at.strftime('%Y-%m-%d'), inline=True)
+    embed.add_field(name='💬 Channels', value=len(guild.channels), inline=True)
+    embed.add_field(name='😀 Emojis', value=len(guild.emojis), inline=True)
+    embed.add_field(name='🎭 Roles', value=len(guild.roles), inline=True)
+    
+    await interaction.response.send_message(embed=embed)
 
 # Run bot
 if __name__ == '__main__':
