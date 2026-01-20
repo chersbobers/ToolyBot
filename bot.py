@@ -8,6 +8,7 @@ import asyncio
 from datetime import datetime
 import aiohttp
 import logging
+from aiohttp import web
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -87,9 +88,30 @@ class MyBot(commands.Bot):
 
 bot = MyBot()
 
+# Simple HTTP server for Render health checks
+async def health_check(request):
+    return web.Response(text="Bot is running! ✅")
+
+async def start_web_server():
+    """Start a simple web server for Render health checks"""
+    app = web.Application()
+    app.router.add_get('/', health_check)
+    app.router.add_get('/health', health_check)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    
+    port = int(os.getenv('PORT', 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    logger.info(f'🌐 Health check server running on port {port}')
+
 # Events
 @bot.event
 async def on_ready():
+    # Start web server for Render
+    asyncio.create_task(start_web_server())
+    
     logger.info(f'✅ Logged in as {bot.user}')
     logger.info(f'📊 Connected to {len(bot.guilds)} guilds')
     await bot.change_presence(activity=discord.Game(name="/help"))
@@ -344,6 +366,224 @@ async def serverinfo(interaction: discord.Interaction):
     embed.add_field(name='🎭 Roles', value=len(guild.roles), inline=True)
     
     await interaction.response.send_message(embed=embed)
+
+# Reaction Roles
+@bot.event
+async def on_raw_reaction_add(payload):
+    if payload.user_id == bot.user.id:
+        return
+    
+    # Get reaction role data
+    guild_id = str(payload.guild_id)
+    message_id = str(payload.message_id)
+    
+    if 'reaction_roles' not in bot.db.data:
+        bot.db.data['reaction_roles'] = {}
+    
+    if guild_id not in bot.db.data['reaction_roles']:
+        return
+    
+    if message_id not in bot.db.data['reaction_roles'][guild_id]:
+        return
+    
+    emoji_str = str(payload.emoji)
+    role_id = bot.db.data['reaction_roles'][guild_id][message_id].get(emoji_str)
+    
+    if not role_id:
+        return
+    
+    guild = bot.get_guild(payload.guild_id)
+    if not guild:
+        return
+    
+    role = guild.get_role(int(role_id))
+    if not role:
+        return
+    
+    member = guild.get_member(payload.user_id)
+    if not member:
+        return
+    
+    try:
+        await member.add_roles(role)
+        logger.info(f'✅ Added role {role.name} to {member.name}')
+    except Exception as e:
+        logger.error(f'❌ Error adding role: {e}')
+
+@bot.event
+async def on_raw_reaction_remove(payload):
+    if payload.user_id == bot.user.id:
+        return
+    
+    guild_id = str(payload.guild_id)
+    message_id = str(payload.message_id)
+    
+    if 'reaction_roles' not in bot.db.data:
+        return
+    
+    if guild_id not in bot.db.data.get('reaction_roles', {}):
+        return
+    
+    if message_id not in bot.db.data['reaction_roles'][guild_id]:
+        return
+    
+    emoji_str = str(payload.emoji)
+    role_id = bot.db.data['reaction_roles'][guild_id][message_id].get(emoji_str)
+    
+    if not role_id:
+        return
+    
+    guild = bot.get_guild(payload.guild_id)
+    if not guild:
+        return
+    
+    role = guild.get_role(int(role_id))
+    if not role:
+        return
+    
+    member = guild.get_member(payload.user_id)
+    if not member:
+        return
+    
+    try:
+        await member.remove_roles(role)
+        logger.info(f'➖ Removed role {role.name} from {member.name}')
+    except Exception as e:
+        logger.error(f'❌ Error removing role: {e}')
+
+@bot.tree.command(name='reactionrole', description='[ADMIN] Create a reaction role')
+@app_commands.describe(
+    message_id='Message ID to add reactions to',
+    emoji='Emoji to use (e.g., 🎮)',
+    role='Role to assign'
+)
+@app_commands.default_permissions(administrator=True)
+async def reactionrole(interaction: discord.Interaction, message_id: str, emoji: str, role: discord.Role):
+    try:
+        message = await interaction.channel.fetch_message(int(message_id))
+    except discord.NotFound:
+        await interaction.response.send_message('❌ Message not found in this channel!', ephemeral=True)
+        return
+    except ValueError:
+        await interaction.response.send_message('❌ Invalid message ID!', ephemeral=True)
+        return
+    
+    try:
+        await message.add_reaction(emoji)
+    except discord.HTTPException:
+        await interaction.response.send_message('❌ Invalid emoji or unable to add reaction!', ephemeral=True)
+        return
+    
+    # Save reaction role
+    guild_id = str(interaction.guild.id)
+    
+    if 'reaction_roles' not in bot.db.data:
+        bot.db.data['reaction_roles'] = {}
+    
+    if guild_id not in bot.db.data['reaction_roles']:
+        bot.db.data['reaction_roles'][guild_id] = {}
+    
+    if message_id not in bot.db.data['reaction_roles'][guild_id]:
+        bot.db.data['reaction_roles'][guild_id][message_id] = {}
+    
+    bot.db.data['reaction_roles'][guild_id][message_id][emoji] = str(role.id)
+    bot.db.save()
+    
+    embed = discord.Embed(
+        title='✅ Reaction Role Created',
+        description=f'React with {emoji} on the message to get {role.mention}',
+        color=0x00FF00
+    )
+    embed.add_field(name='Message ID', value=message_id, inline=True)
+    embed.add_field(name='Emoji', value=emoji, inline=True)
+    embed.add_field(name='Role', value=role.mention, inline=True)
+    
+    await interaction.response.send_message(embed=embed)
+    logger.info(f'✅ Created reaction role: {emoji} -> {role.name}')
+
+@bot.tree.command(name='removereactionrole', description='[ADMIN] Remove a reaction role')
+@app_commands.describe(
+    message_id='Message ID',
+    emoji='Emoji to remove (leave empty to remove all)'
+)
+@app_commands.default_permissions(administrator=True)
+async def removereactionrole(interaction: discord.Interaction, message_id: str, emoji: str = None):
+    guild_id = str(interaction.guild.id)
+    
+    if 'reaction_roles' not in bot.db.data:
+        bot.db.data['reaction_roles'] = {}
+    
+    if guild_id not in bot.db.data['reaction_roles'] or message_id not in bot.db.data['reaction_roles'].get(guild_id, {}):
+        await interaction.response.send_message('❌ No reaction roles found for that message!', ephemeral=True)
+        return
+    
+    if emoji:
+        if emoji not in bot.db.data['reaction_roles'][guild_id][message_id]:
+            await interaction.response.send_message('❌ That emoji is not set up for reaction roles!', ephemeral=True)
+            return
+        
+        del bot.db.data['reaction_roles'][guild_id][message_id][emoji]
+        bot.db.save()
+        await interaction.response.send_message(f'✅ Removed reaction role for {emoji}')
+    else:
+        del bot.db.data['reaction_roles'][guild_id][message_id]
+        bot.db.save()
+        await interaction.response.send_message(f'✅ Removed all reaction roles from message {message_id}')
+
+@bot.tree.command(name='listreactionroles', description='List all reaction roles')
+async def listreactionroles(interaction: discord.Interaction):
+    guild_id = str(interaction.guild.id)
+    
+    if 'reaction_roles' not in bot.db.data:
+        bot.db.data['reaction_roles'] = {}
+    
+    guild_reactions = bot.db.data['reaction_roles'].get(guild_id, {})
+    
+    if not guild_reactions:
+        await interaction.response.send_message('No reaction roles configured yet!')
+        return
+    
+    embed = discord.Embed(
+        title='🎭 Reaction Roles',
+        color=0x9B59B6
+    )
+    
+    for msg_id, reactions in guild_reactions.items():
+        roles_text = []
+        for emoji, role_id in reactions.items():
+            role = interaction.guild.get_role(int(role_id))
+            role_name = role.mention if role else f'Role ID: {role_id}'
+            roles_text.append(f'{emoji} → {role_name}')
+        
+        embed.add_field(
+            name=f'Message ID: {msg_id}',
+            value='\n'.join(roles_text) if roles_text else 'No reactions',
+            inline=False
+        )
+    
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name='createreactionpanel', description='[ADMIN] Create a reaction role panel')
+@app_commands.describe(
+    title='Panel title',
+    description='Panel description'
+)
+@app_commands.default_permissions(administrator=True)
+async def createreactionpanel(interaction: discord.Interaction, title: str, description: str):
+    embed = discord.Embed(
+        title=f'🎭 {title}',
+        description=description,
+        color=0x9B59B6
+    )
+    embed.set_footer(text='React below to get your roles!')
+    
+    message = await interaction.channel.send(embed=embed)
+    
+    await interaction.response.send_message(
+        f'✅ Panel created! Message ID: `{message.id}`\n'
+        f'Use `/reactionrole {message.id} <emoji> <role>` to add roles to it.',
+        ephemeral=True
+    )
 
 # Run bot
 if __name__ == '__main__':
