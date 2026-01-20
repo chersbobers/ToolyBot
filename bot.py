@@ -114,7 +114,7 @@ async def on_ready():
     
     logger.info(f'✅ Logged in as {bot.user}')
     logger.info(f'📊 Connected to {len(bot.guilds)} guilds')
-    await bot.change_presence(activity=discord.Game(name="/help"))
+    await bot.change_presence(activity=discord.Watching(name="pippyoc"))
     logger.info('🚀 All systems operational!')
 
 @bot.event
