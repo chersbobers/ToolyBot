@@ -597,4 +597,205 @@ class System(commands.Cog):
     async def listreactionroles(self, interaction: discord.Interaction):
         guild_id = str(interaction.guild.id)
         
-        if 'reaction
+        if 'reaction_roles' not in self.bot.db.data:
+            self.bot.db.data['reaction_roles'] = {}
+        
+        guild_reactions = self.bot.db.data['reaction_roles'].get(guild_id, {})
+        
+        if not guild_reactions:
+            await interaction.response.send_message('No reaction roles configured yet!')
+            return
+        
+        embed = discord.Embed(
+            title='🎭 Reaction Roles',
+            color=0x9B59B6
+        )
+        
+        for msg_id, reactions in guild_reactions.items():
+            roles_text = []
+            for emoji, role_id in reactions.items():
+                role = interaction.guild.get_role(int(role_id))
+                role_name = role.mention if role else f'Role ID: {role_id}'
+                roles_text.append(f'{emoji} → {role_name}')
+            
+            embed.add_field(
+                name=f'Message ID: {msg_id}',
+                value='\n'.join(roles_text) if roles_text else 'No reactions',
+                inline=False
+            )
+        
+        await interaction.response.send_message(embed=embed)
+    
+    @app_commands.command(name='createreactionpanel', description='[ADMIN] Create a reaction role panel')
+    @app_commands.describe(title='Panel title', description='Panel description')
+    @app_commands.default_permissions(administrator=True)
+    async def createreactionpanel(self, interaction: discord.Interaction, title: str, description: str):
+        embed = discord.Embed(
+            title=f'🎭 {title}',
+            description=description,
+            color=0x9B59B6
+        )
+        embed.set_footer(text='React below to get your roles!')
+        
+        message = await interaction.channel.send(embed=embed)
+        
+        await interaction.response.send_message(
+            f'✅ Panel created! Message ID: `{message.id}`\n'
+            f'Use `/reactionrole {message.id} <emoji> <role>` to add roles to it.',
+            ephemeral=True
+        )
+    
+    @app_commands.command(name='setupyoutube', description='[ADMIN] Set up YouTube notifications')
+    @app_commands.describe(youtube_channel_id='YouTube Channel ID (from channel URL)', notification_channel='Discord channel for notifications (defaults to current channel)')
+    @app_commands.default_permissions(administrator=True)
+    async def setupyoutube(self, interaction: discord.Interaction, youtube_channel_id: str, notification_channel: discord.TextChannel = None):
+        guild_id = str(interaction.guild.id)
+        channel = notification_channel or interaction.channel
+        
+        if 'youtube' not in self.bot.db.data:
+            self.bot.db.data['youtube'] = {}
+        
+        self.bot.db.data['youtube'][guild_id] = {
+            'enabled': True,
+            'channel_id': str(channel.id),
+            'youtube_channel_id': youtube_channel_id.strip(),
+            'last_video_id': None
+        }
+        self.bot.db.save()
+        
+        embed = discord.Embed(
+            title='✅ YouTube Notifications Configured',
+            description=f'New video notifications will be posted in {channel.mention}',
+            color=0xFF0000
+        )
+        embed.add_field(name='YouTube Channel ID', value=f'`{youtube_channel_id}`', inline=False)
+        embed.add_field(name='Check Interval', value='Every 5 minutes', inline=True)
+        embed.add_field(name='Status', value='🟢 Active', inline=True)
+        
+        await interaction.response.send_message(embed=embed)
+        logger.info(f'✅ YouTube notifications enabled in {interaction.guild.name} → #{channel.name}')
+    
+    @app_commands.command(name='toggleyoutube', description='[ADMIN] Toggle YouTube notifications on/off')
+    @app_commands.default_permissions(administrator=True)
+    async def toggleyoutube(self, interaction: discord.Interaction):
+        guild_id = str(interaction.guild.id)
+        
+        if 'youtube' not in self.bot.db.data:
+            self.bot.db.data['youtube'] = {}
+        
+        if guild_id not in self.bot.db.data['youtube']:
+            self.bot.db.data['youtube'][guild_id] = {
+                'enabled': False,
+                'channel_id': None,
+                'last_video_id': None
+            }
+        
+        self.bot.db.data['youtube'][guild_id]['enabled'] = not self.bot.db.data['youtube'][guild_id].get('enabled', False)
+        self.bot.db.save()
+        
+        status = 'enabled ✅' if self.bot.db.data['youtube'][guild_id]['enabled'] else 'disabled ❌'
+        color = 0x00FF00 if self.bot.db.data['youtube'][guild_id]['enabled'] else 0x808080
+        
+        embed = discord.Embed(
+            title='🔔 YouTube Notifications',
+            description=f'YouTube notifications are now **{status}**',
+            color=color,
+            timestamp=datetime.utcnow()
+        )
+        
+        await interaction.response.send_message(embed=embed)
+    
+    @app_commands.command(name='youtubestatus', description='Check YouTube notification status')
+    async def youtubestatus(self, interaction: discord.Interaction):
+        guild_id = str(interaction.guild.id)
+        
+        if 'youtube' not in self.bot.db.data:
+            self.bot.db.data['youtube'] = {}
+        
+        settings = self.bot.db.data['youtube'].get(guild_id, {
+            'enabled': False,
+            'channel_id': None,
+            'last_video_id': None
+        })
+        
+        embed = discord.Embed(
+            title='📺 YouTube Notification Status',
+            color=0xFF0000
+        )
+        
+        status = '🟢 Enabled' if settings.get('enabled') else '🔴 Disabled'
+        embed.add_field(name='Status', value=status, inline=True)
+        
+        if settings.get('channel_id'):
+            channel = interaction.guild.get_channel(int(settings['channel_id']))
+            channel_name = channel.mention if channel else 'Channel not found'
+            embed.add_field(name='Notification Channel', value=channel_name, inline=True)
+        else:
+            embed.add_field(name='Notification Channel', value='Not set', inline=True)
+        
+        if settings.get('youtube_channel_id'):
+            embed.add_field(name='YouTube Channel ID', value=f'`{settings["youtube_channel_id"]}`', inline=False)
+        else:
+            embed.add_field(name='⚠️ Warning', value='YouTube Channel ID not set', inline=False)
+        
+        if settings.get('last_video_id'):
+            embed.add_field(name='Last Video ID', value=f'`{settings["last_video_id"]}`', inline=False)
+        
+        embed.set_footer(text='Use /setupyoutube to configure')
+        
+        await interaction.response.send_message(embed=embed)
+    
+    @app_commands.command(name='testlastvideo', description='[ADMIN] Manually announce the latest YouTube video')
+    @app_commands.default_permissions(administrator=True)
+    async def testlastvideo(self, interaction: discord.Interaction):
+        guild_id = str(interaction.guild.id)
+        
+        if 'youtube' not in self.bot.db.data:
+            self.bot.db.data['youtube'] = {}
+        
+        settings = self.bot.db.data['youtube'].get(guild_id, {})
+        
+        if not settings.get('youtube_channel_id'):
+            await interaction.response.send_message('❌ YouTube Channel ID not configured! Use `/setupyoutube` first.', ephemeral=True)
+            return
+        
+        await interaction.response.defer()
+        
+        try:
+            feed_url = f'https://www.youtube.com/feeds/videos.xml?channel_id={settings["youtube_channel_id"]}'
+            feed = await asyncio.to_thread(feedparser.parse, feed_url)
+            
+            if not feed.entries:
+                await interaction.followup.send('❌ No videos found for this channel!')
+                return
+            
+            latest = feed.entries[0]
+            video_id = latest.yt_videoid if hasattr(latest, 'yt_videoid') else latest.id.split(':')[-1]
+            
+            embed = discord.Embed(
+                title='🎬 Latest YouTube Video (Test)',
+                description=f'**{latest.title}**',
+                url=latest.link,
+                color=0xFF0000,
+                timestamp=datetime.utcnow()
+            )
+            
+            if hasattr(latest, 'media_thumbnail') and latest.media_thumbnail:
+                embed.set_thumbnail(url=latest.media_thumbnail[0]['url'])
+            
+            embed.add_field(name='Channel', value=latest.author, inline=True)
+            
+            if hasattr(latest, 'published'):
+                embed.add_field(name='Published', value=latest.published, inline=True)
+            
+            embed.set_footer(text='This is a test notification')
+            
+            await interaction.followup.send(embed=embed)
+            logger.info(f'📺 Test notification sent for: {latest.title}')
+        
+        except Exception as e:
+            await interaction.followup.send(f'❌ Error fetching video: {e}')
+            logger.error(f'❌ Error in testlastvideo: {e}')
+
+async def setup(bot):
+    await bot.add_cog(System(bot))
