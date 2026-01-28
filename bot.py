@@ -82,12 +82,12 @@ class MyBot(commands.Bot):
         await self.load_extension('cogs.fun')
         
         await self.tree.sync()
-        logger.info('✅ All cogs loaded and commands synced!')
+        logger.info('All cogs loaded and commands synced!')
 
 bot = MyBot()
 
 async def health_check(request):
-    return web.Response(text="Bot is running! ✅")
+    return web.Response(text="Bot is running!")
 
 async def start_web_server():
     app = web.Application()
@@ -100,46 +100,46 @@ async def start_web_server():
     port = int(os.getenv('PORT', 8080))
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
-    logger.info(f'🌐 Health check server running on port {port}')
+    logger.info(f'Health check server running on port {port}')
 
 @bot.event
 async def on_ready():
     asyncio.create_task(start_web_server())
     
-    logger.info(f'✅ Logged in as {bot.user}')
-    logger.info(f'📊 Connected to {len(bot.guilds)} guilds')
+    logger.info(f'Logged in as {bot.user}')
+    logger.info(f'Connected to {len(bot.guilds)} guilds')
     await bot.change_presence(activity=discord.Game(name="/help"))
-    logger.info('🚀 All systems operational!')
+    logger.info('All systems operational!')
 
 @bot.tree.command(name='help', description='Show all available commands')
 async def help_command(interaction: discord.Interaction):
     embed = discord.Embed(
-        title='🤖 Bot Commands',
+        title='Bot Commands',
         description='Here are all the slash commands you can use!',
         color=0x5865F2
     )
     embed.add_field(
-        name='📊 Leveling & Economy',
+        name='Leveling & Economy',
         value='`/rank` - View your rank\n`/leaderboard` - Top 10 users\n`/balance` - Check balance\n`/daily` - Daily reward\n`/work` - Work for coins',
         inline=False
     )
     embed.add_field(
-        name='🎮 Fun',
+        name='Fun',
         value='`/8ball` - Magic 8ball\n`/roll` - Roll dice\n`/flip` - Flip coin\n`/cat` - Random cat\n`/dog` - Random dog',
         inline=False
     )
     embed.add_field(
-        name='🛡️ System & Moderation',
+        name='System & Moderation',
         value='`/kick` - Kick member\n`/ban` - Ban member\n`/unban` - Unban user\n`/timeout` - Timeout member\n`/warn` - Warn member\n`/warnings` - View warnings\n`/clearwarnings` - Clear warnings\n`/purge` - Delete messages\n`/lock` - Lock channel\n`/unlock` - Unlock channel',
         inline=False
     )
     embed.add_field(
-        name='🎭 Reaction Roles & YouTube',
+        name='Reaction Roles & YouTube',
         value='`/reactionrole` - Create reaction role\n`/removereactionrole` - Remove reaction role\n`/listreactionroles` - List reaction roles\n`/createreactionpanel` - Create panel\n`/setupyoutube` - Setup YouTube\n`/toggleyoutube` - Toggle YouTube\n`/youtubestatus` - YouTube status\n`/testlastvideo` - Test video',
         inline=False
     )
     embed.add_field(
-        name='ℹ️ Info',
+        name='Info',
         value='`/ping` - Bot latency\n`/serverinfo` - Server info\n`/userinfo` - User info',
         inline=False
     )
@@ -148,7 +148,7 @@ async def help_command(interaction: discord.Interaction):
 if __name__ == '__main__':
     token = os.getenv('DISCORD_TOKEN')
     if not token:
-        logger.error('❌ DISCORD_TOKEN not set!')
+        logger.error('DISCORD_TOKEN not set!')
         exit(1)
     
     logger.info("everythings working")

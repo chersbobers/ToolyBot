@@ -14,7 +14,7 @@ class Economy(commands.Cog):
         user_data = self.bot.db.get_user(str(interaction.guild.id), str(target.id))
         
         embed = discord.Embed(
-            title='💰 Balance',
+            title='Balance',
             description=f'{target.mention} has **{user_data["coins"]:,}** coins in wallet and **{user_data["bank"]:,}** in bank!\n**Total:** {user_data["coins"] + user_data["bank"]:,} coins',
             color=0xFFD700
         )
@@ -28,7 +28,7 @@ class Economy(commands.Cog):
         if now - user_data['last_daily'] < 86400:
             time_left = 86400 - (now - user_data['last_daily'])
             hours = int(time_left / 3600)
-            await interaction.response.send_message(f'⏳ You already claimed your daily! Come back in {hours} hours.', ephemeral=True)
+            await interaction.response.send_message(f'You already claimed your daily! Come back in {hours} hours.', ephemeral=True)
             return
         
         reward = 100
@@ -36,7 +36,7 @@ class Economy(commands.Cog):
         user_data['last_daily'] = now
         self.bot.db.set_user(str(interaction.guild.id), str(interaction.user.id), user_data)
         
-        await interaction.response.send_message(f'✅ You claimed your daily reward of **{reward:,}** coins!\n💰 New balance: **{user_data["coins"]:,}** coins')
+        await interaction.response.send_message(f'You claimed your daily reward of **{reward:,}** coins!\n💰 New balance: **{user_data["coins"]:,}** coins')
     
     @app_commands.command(name='work', description='Work to earn coins')
     async def work(self, interaction: discord.Interaction):
@@ -46,7 +46,7 @@ class Economy(commands.Cog):
         if now - user_data['last_work'] < 3600:
             time_left = 3600 - (now - user_data['last_work'])
             minutes = int(time_left / 60)
-            await interaction.response.send_message(f'⏳ You need to rest! Come back in {minutes} minutes.', ephemeral=True)
+            await interaction.response.send_message(f'You need to rest! Come back in {minutes} minutes.', ephemeral=True)
             return
         
         earnings = random.randint(10, 50)
@@ -63,7 +63,7 @@ class Economy(commands.Cog):
             'You tutored students and earned'
         ]
         
-        await interaction.response.send_message(f'💼 {random.choice(jobs)} **{earnings:,}** coins!\n💰 New balance: **{user_data["coins"]:,}** coins')
+        await interaction.response.send_message(f'{random.choice(jobs)} **{earnings:,}** coins!\n💰 New balance: **{user_data["coins"]:,}** coins')
 
 async def setup(bot):
     await bot.add_cog(Economy(bot))
