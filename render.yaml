@@ -6,6 +6,7 @@ services:
     region: oregon
     branch: main
     dockerfilePath: ./Dockerfile
+    numInstances: 1
     envVars:
       - key: DISCORD_TOKEN
         sync: false
