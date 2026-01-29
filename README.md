@@ -22,7 +22,7 @@ there is 2 methods of install:
 
 ## Prehosted
 
-[Click me for invite](https://discord.com/oauth2/authorize?client_id=1462727094575562916&permissions=8&integration_type=0&scope=bot+applications.commands)
+[Click me for invite](https://discord.com/oauth2/authorize?client_id=1466398693383995558&permissions=8&integration_type=0&scope=bot+applications.commands)
 notes: again servers will most likely be slow and only 100 servers at a time if it reaches over a 100 servers I might host another one links will be updated.
 
 ## Self hosting
