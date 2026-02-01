@@ -1,0 +1,23 @@
+# this is the deafult config file 
+[bot]
+data_file = "data.json"
+# this allows you to pick your cogs if installing multiple
+enabled_cogs = [    
+    "cogs.leveling",
+    "cogs.system",
+    "cogs.economy",
+    "cogs.fun",
+    "cogs.utility"
+]
+
+# this might not even need a comment but xp
+[xp]
+min = 15
+max = 25
+cooldown = 60
+per_level = 100
+level_up_multiplier = 10
+# port and how many times it checks for videos
+[web]
+video_check_interval = 300
+port = 3000
