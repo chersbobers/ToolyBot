@@ -14,6 +14,7 @@ def load_config():
     base_path = os.path.dirname(__file__)
     config_path = os.path.join(base_path, "config.toml")
     try:
+        print(f"Loading config from: {config_path}")
         with open(config_path, "rb") as f:
             return tomllib.load(f)
     except FileNotFoundError:
