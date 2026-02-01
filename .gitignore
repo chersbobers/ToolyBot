@@ -1,13 +1,4 @@
-# Data files
 data.json
 timeouts.json
-
-# Environment files
 .env
-
-# Luvit files
-deps/
-lit-*
-
-# Logs
 *.log
