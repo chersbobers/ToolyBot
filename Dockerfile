@@ -7,5 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY bot.py .
 COPY cogs/ ./cogs/
+COPY config.toml .
 
 CMD ["python", "bot.py"]
