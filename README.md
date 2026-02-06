@@ -11,7 +11,7 @@ Fork freely just credit booly
 
 # Installation
 there is 2 methods of install:
-1. prehosted 100 servers limit servers can be slow and updates are tested there.
+1. prehosted 100 servers limit servers can be slow (running on render free).
 2. self host it
 
 ## Prehosted
