@@ -1,3 +1,4 @@
+# as of 4:23 pm nzdt 6/02/2026 render has been rate limited for new pushes to the  servers are down :(
 <div align="center">
 <img src="https://files.catbox.moe/zuj0ob.png" alt="Booly" width="100%">
 <img src="https://img.shields.io/badge/discord.py-2.0+-5865F2?style=flat&logo=discord&logoColor=white" alt="discord.py">
@@ -11,7 +12,7 @@ Fork freely just credit booly
 
 # Installation
 there is 2 methods of install:
-1. prehosted 100 servers limit servers can be slow and updates are tested there.
+1. prehosted 100 servers limit servers can be slow (render free I will be moving to digital ocean through github student dev pack :) ).
 2. self host it
 
 ## Prehosted
@@ -23,7 +24,7 @@ notes: again servers will most likely be slow and only 100 servers at a time if 
 I recommended using the main stable repo (https://github.com/chersbobers/booly) for yours but the nightly branch is usable too (https://github.com/chersbobers/booly/tree/nightly)
 
 ### what you need
-A server I use render because im broke with uptimerobot (note: Oregen servers are ip banned for me they might not be for you)
+A server I use render because im broke with uptimerobot (note: Oregen and singapore servers are ip banned for me they might not be for you)
 Also a discord bot with Presence Intent, Server Members Intent and Message Content Intent
 
 Envs:
