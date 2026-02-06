@@ -30,13 +30,13 @@ class Leveling(commands.Cog):
                 user_data['coins'] += coin_reward
                 
                 messages = [
-                    f'🎉 GG {message.author.mention}! You leveled up to **Level {user_data["level"]}**!',
-                    f'⭐ Congrats {message.author.mention}! You\'re now **Level {user_data["level"]}**!',
-                    f'🚀 Level up! {message.author.mention} reached **Level {user_data["level"]}**!'
+                    f'gg {message.author.mention}! You leveled up to **Level {user_data["level"]}**!',
+                    f'Congrats {message.author.mention}! You\'re now **Level {user_data["level"]}**!',
+                    f'Level up! {message.author.mention} reached **Level {user_data["level"]}**!'
                 ]
                 
                 await message.channel.send(
-                    f'{random.choice(messages)} You earned **{coin_reward:,} coins**! 💰'
+                    f'{random.choice(messages)} You earned **{coin_reward:,} coins**! '
                 )
             
             self.bot.db.set_user(str(message.guild.id), str(message.author.id), user_data)
@@ -64,7 +64,7 @@ class Leveling(commands.Cog):
 
 `{bar}`
 
-**💰 BALANCE** • {user_data['coins']:,} coins
+**BALANCE** • {user_data['coins']:,} coins
         """
         embed.set_thumbnail(url=target.display_avatar.url)
         await interaction.response.send_message(embed=embed)
@@ -82,7 +82,7 @@ class Leveling(commands.Cog):
             )
         
         embed = discord.Embed(
-            title='🏆 Server Leaderboard',
+            title='Server Leaderboard',
             description='\n'.join(description) if description else 'No users yet!',
             color=0x9B59B6,
             timestamp=datetime.utcnow()
