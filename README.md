@@ -1,8 +1,8 @@
-# as of 4:23 pm nzdt 6/02/2026 render has been rate limited for new pushes to the  servers are down :(
 <div align="center">
 <img src="https://files.catbox.moe/zuj0ob.png" alt="Booly" width="100%">
 <img src="https://img.shields.io/badge/discord.py-2.0+-5865F2?style=flat&logo=discord&logoColor=white" alt="discord.py">
 <img src="https://img.shields.io/badge/Python-3.8+-3776AB?style=flat&logo=python&logoColor=white" alt="python">
+<img src="https://img.shields.io/badge/Hosted%20on-DigitalOcean-%230080FF?style=flat&logo=digitalocean&logoColor=white" alt="Hosted on DigitalOcean">
 <img src="https://img.shields.io/badge/made%20by-chersbobers%20%3A3-FF69B4?style=flat&labelColor=555555" alt="Made by Chersbobers :3">
 </div>
 
@@ -12,19 +12,19 @@ Fork freely just credit booly
 
 # Installation
 there is 2 methods of install:
-1. prehosted 100 servers limit servers can be slow (render free I will be moving to digital ocean through github student dev pack :) ).
+1. prehosted 100 servers limit running on digital ocean (1 GB Memory / 1 Intel vCPU / 35 GB Disk)
 2. self host it
 
 ## Prehosted
 [__Click me for invite__](__https://discord.com/oauth2/authorize?client_id=1466398693383995558&permissions=8&integration_type=0&scope=bot+applications.commands__)
 
-notes: again servers will most likely be slow and only 100 servers at a time if it reaches over a 100 servers I might host another one links will be updated.
+notes: until I give discord my id 100 servers can have this more may be added.
 
 ## Self hosting
 I recommended using the main stable repo (https://github.com/chersbobers/booly) for yours but the nightly branch is usable too (https://github.com/chersbobers/booly/tree/nightly)
 
 ### what you need
-A server I use render because im broke with uptimerobot (note: Oregen and singapore servers are ip banned for me they might not be for you)
+A server I reccomend render with uptimerobot (note: Oregen and singapore servers are ip banned for me they might not be for you)
 Also a discord bot with Presence Intent, Server Members Intent and Message Content Intent
 
 Envs:
