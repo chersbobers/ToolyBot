@@ -7,9 +7,7 @@
 </div>
 
 # Overview
-Booly bot (or better tooly) is a fork of my original discord bot tooly bot this is a updated fork that is easier to develop and use.
-Fork freely just credit booly 
-
+Booly the bot your server deserves. 
 # Installation
 there is 2 methods of install:
 1. prehosted 100 servers limit running on digital ocean (1 GB Memory / 1 Intel vCPU / 35 GB Disk)
