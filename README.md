@@ -1,4 +1,4 @@
-# Main repo: [Codeberg](https://codeberg.org/chersbobers/booly) [Pushing](https://github.com/chersbobers/booly/tree/stable)
+# Main repo: [Codeberg](https://codeberg.org/chersbobers/booly) Pushing too [Github](https://github.com/chersbobers/booly/tree/stable)
 <div align="center">
 <img src="https://files.catbox.moe/zuj0ob.png" alt="Booly" width="100%">
 <img src="https://img.shields.io/badge/discord.py-2.0+-5865F2?style=flat&logo=discord&logoColor=white" alt="discord.py">
