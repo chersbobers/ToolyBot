@@ -12,7 +12,7 @@ mirroring to codeberg https://codeberg.org/chersbobers/booly
 Booly the bot your server deserves. 
 # Installation
 there is 2 methods of install:
-1. prehosted 100 servers limit running on digital ocean (1 GB Memory / 1 Intel vCPU / 35 GB Disk)
+1. <s>prehosted 100 servers limit running on digital ocean (1 GB Memory / 1 Intel vCPU / 35 GB Disk) </s> Prehosted is down I can't be bothered to pay tax on it.
 2. self host it
 
 ## Prehosted
