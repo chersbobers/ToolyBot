@@ -6,7 +6,7 @@
 <img src="https://img.shields.io/badge/Hosted%20on-DigitalOcean-%230080FF?style=flat&logo=digitalocean&logoColor=white" alt="Hosted on DigitalOcean">
 <img src="https://img.shields.io/badge/made%20by-chersbobers%20%3A3-FF69B4?style=flat&labelColor=555555" alt="Made by Chersbobers">
 </div>
-mirroring to codeberg https://codeberg.org/chersbobers/booly
+
 
 # Overview
 Booly the bot your server deserves. 
