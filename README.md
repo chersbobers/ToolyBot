@@ -1,16 +1,18 @@
+# Main repo: [Codeberg](https://codeberg.org/chersbobers/booly) [Pushing](https://github.com/chersbobers/booly/tree/stable)
 <div align="center">
 <img src="https://files.catbox.moe/zuj0ob.png" alt="Booly" width="100%">
 <img src="https://img.shields.io/badge/discord.py-2.0+-5865F2?style=flat&logo=discord&logoColor=white" alt="discord.py">
 <img src="https://img.shields.io/badge/Python-3.8+-3776AB?style=flat&logo=python&logoColor=white" alt="python">
 <img src="https://img.shields.io/badge/Hosted%20on-DigitalOcean-%230080FF?style=flat&logo=digitalocean&logoColor=white" alt="Hosted on DigitalOcean">
-<img src="https://img.shields.io/badge/made%20by-chersbobers%20%3A3-FF69B4?style=flat&labelColor=555555" alt="Made by Chersbobers :3">
+<img src="https://img.shields.io/badge/made%20by-chersbobers%20%3A3-FF69B4?style=flat&labelColor=555555" alt="Made by Chersbobers">
 </div>
+mirroring to codeberg https://codeberg.org/chersbobers/booly
 
 # Overview
 Booly the bot your server deserves. 
 # Installation
 there is 2 methods of install:
-1. prehosted 100 servers limit running on digital ocean (1 GB Memory / 1 Intel vCPU / 35 GB Disk)
+1. <s>prehosted 100 servers limit running on digital ocean (1 GB Memory / 1 Intel vCPU / 35 GB Disk) </s> Prehosted is down I can't be bothered to pay tax on it.
 2. self host it
 
 ## Prehosted
